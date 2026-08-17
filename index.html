@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>دفترچه اقساط</title>
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="دفترچه اقساط">
+<meta name="theme-color" content="#1F4D3A">
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F3EFE3;
+    --paper-dark:#EAE3D0;
+    --ink:#1C2B22;
+    --ink-soft:#4A5A4F;
+    --green:#1F4D3A;
+    --green-dark:#123227;
+    --gold:#B8902E;
+    --red:#A23B33;
+    --line:#C9C0A8;
+    --white:#FBFAF5;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'Vazirmatn', sans-serif;
+    background:
+      radial-gradient(ellipse at top left, rgba(31,77,58,0.08), transparent 50%),
+      var(--paper);
+    color:var(--ink);
+    min-height:100vh;
+    padding:24px 16px 80px;
+  }
+  .wrap{ max-width:920px; margin:0 auto; }
+
+  /* Header */
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:28px; flex-wrap:wrap; gap:12px;
+  }
+  .brand{ display:flex; align-items:center; gap:12px; }
+  .brand .mark{
+    width:46px; height:46px; border-radius:50%;
+    background:var(--green); color:var(--white);
+    display:flex; align-items:center; justify-content:center;
+    font-size:20px; font-weight:800; flex-shrink:0;
+    box-shadow: 0 3px 0 var(--green-dark);
+  }
+  .brand h1{ font-size:20px; font-weight:800; letter-spacing:-.3px; }
+  .brand p{ font-size:12px; color:var(--ink-soft); margin-top:2px; }
+  .today-pill{
+    font-size:12.5px; background:var(--white); border:1px solid var(--line);
+    padding:8px 14px; border-radius:999px; color:var(--ink-soft);
+  }
+  .today-pill b{ color:var(--ink); font-weight:700; }
+
+  /* Reminder banner */
+  .banner{
+    display:none;
+    background: linear-gradient(90deg, var(--gold), #cfa63c);
+    color:#2A1F06; border-radius:14px; padding:14px 18px;
+    margin-bottom:20px; font-size:13.5px; font-weight:600;
+    align-items:center; gap:10px; box-shadow:0 3px 0 rgba(0,0,0,0.12);
+  }
+  .banner.show{ display:flex; }
+  .banner .dot{ width:8px; height:8px; border-radius:50%; background:#2A1F06; flex-shrink:0; }
+
+  /* Layout: ledger stub + main */
+  .layout{ display:grid; grid-template-columns: 260px 1fr; gap:0; align-items:start; }
+  @media (max-width:760px){ .layout{ grid-template-columns:1fr; } }
+
+  .stub{
+    background:var(--green); color:var(--white); border-radius:16px 0 0 16px;
+    padding:22px 18px; position:relative;
+    background-image: repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(255,255,255,0.05) 27px, rgba(255,255,255,0.05) 28px);
+  }
+  @media (max-width:760px){ .stub{ border-radius:16px 16px 0 0; } }
+  .stub::after{
+    content:''; position:absolute; top:0; bottom:0; left:-1px; width:2px;
+    background-image: radial-gradient(circle, var(--paper) 3px, transparent 3.5px);
+    background-size: 14px 16px; background-repeat:repeat-y; background-position:left center;
+  }
+  @media (max-width:760px){ .stub::after{ display:none; } }
+  .stub h3{ font-size:12.5px; opacity:.75; font-weight:600; margin-bottom:16px; letter-spacing:.3px; }
+  .stat{ margin-bottom:18px; }
+  .stat .n{ font-size:22px; font-weight:800; line-height:1.3; }
+  .stat .l{ font-size:11.5px; opacity:.7; margin-top:2px; }
+  .stat.next .n{ color:#F2C265; }
+
+  .main{
+    background:var(--white); border-radius:0 16px 16px 0; padding:22px;
+    border:1px solid var(--line); border-right:none;
+  }
+  @media (max-width:760px){ .main{ border-radius:0 0 16px 16px; border-right:1px solid var(--line); border-top:none; } }
+
+  /* Form */
+  .form-toggle{
+    width:100%; padding:13px; border-radius:10px; border:2px dashed var(--line);
+    background:transparent; color:var(--ink-soft); font-family:inherit; font-size:13.5px;
+    font-weight:600; cursor:pointer; margin-bottom:18px;
+  }
+  .form-toggle:hover{ border-color:var(--green); color:var(--green); }
+  .form{ display:none; margin-bottom:22px; background:var(--paper); border-radius:12px; padding:18px; border:1px solid var(--line); }
+  .form.show{ display:block; }
+  .form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
+  @media (max-width:520px){ .form-grid{ grid-template-columns:1fr; } }
+  .field{ display:flex; flex-direction:column; gap:5px; }
+  .field label{ font-size:12px; font-weight:600; color:var(--ink-soft); }
+  .field input, .field select{
+    font-family:inherit; font-size:13.5px; padding:10px 12px; border-radius:8px;
+    border:1px solid var(--line); background:var(--white); color:var(--ink);
+  }
+  .field input:focus, .field select:focus{ outline:2px solid var(--green); outline-offset:1px; }
+  .date-row{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+  .btn{
+    font-family:inherit; font-weight:700; font-size:13.5px; padding:11px 20px;
+    border-radius:9px; border:none; cursor:pointer;
+  }
+  .btn-primary{ background:var(--green); color:var(--white); box-shadow:0 3px 0 var(--green-dark); }
+  .btn-primary:active{ transform:translateY(2px); box-shadow:none; }
+  .btn-ghost{ background:transparent; color:var(--ink-soft); }
+
+  /* Loan cards */
+  .loan{
+    border:1px solid var(--line); border-radius:14px; margin-bottom:16px; overflow:hidden;
+  }
+  .loan-head{
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    padding:14px 16px; background:var(--paper); flex-wrap:wrap;
+  }
+  .loan-head .bank{ font-weight:800; font-size:14.5px; }
+  .loan-head .meta{ font-size:11.5px; color:var(--ink-soft); margin-top:2px; }
+  .loan-head-right{ display:flex; align-items:center; gap:10px; }
+  .progress-wrap{ display:flex; align-items:center; gap:8px; font-size:11.5px; color:var(--ink-soft); }
+  .progress-bar{ width:70px; height:6px; border-radius:4px; background:var(--line); overflow:hidden; }
+  .progress-bar span{ display:block; height:100%; background:var(--green); }
+  .del-btn{ background:none; border:none; color:var(--red); font-size:12px; cursor:pointer; font-family:inherit; font-weight:600; }
+
+  table{ width:100%; border-collapse:collapse; }
+  th{ font-size:11px; color:var(--ink-soft); text-align:right; padding:8px 16px; font-weight:600; border-bottom:1px solid var(--line); }
+  td{ font-size:13px; padding:10px 16px; border-bottom:1px solid #EEE9D9; }
+  tr:last-child td{ border-bottom:none; }
+  .row-overdue{ background:rgba(162,59,51,0.06); }
+  .row-due-soon{ background:rgba(184,144,46,0.08); }
+  .amt{ font-weight:700; }
+  .badge{
+    display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:700;
+    padding:4px 10px; border-radius:999px;
+  }
+  .badge-overdue{ background:rgba(162,59,51,0.12); color:var(--red); }
+  .badge-soon{ background:rgba(184,144,46,0.15); color:#8a6b1f; }
+  .badge-ok{ background:rgba(31,77,58,0.08); color:var(--green); }
+  .pay-btn{
+    font-family:inherit; font-size:11.5px; font-weight:700; padding:6px 12px;
+    border-radius:7px; border:1px solid var(--green); background:transparent; color:var(--green); cursor:pointer;
+  }
+  .pay-btn:hover{ background:var(--green); color:var(--white); }
+  .stamp{
+    display:inline-block; transform:rotate(-8deg); border:2px solid var(--green);
+    color:var(--green); font-size:10.5px; font-weight:800; padding:3px 9px;
+    border-radius:6px; letter-spacing:.5px; opacity:.85;
+  }
+  .empty{ text-align:center; padding:50px 20px; color:var(--ink-soft); }
+  .empty .big{ font-size:36px; margin-bottom:10px; }
+  .empty p{ font-size:13px; }
+  .notif-btn{
+    font-size:11.5px; color:var(--ink-soft); background:none; border:none; cursor:pointer;
+    text-decoration:underline; font-family:inherit; margin-top:4px;
+  }
+  .foot-note{ font-size:11.5px; color:var(--ink-soft); text-align:center; margin-top:24px; line-height:1.9; }
+
+  .share-toggle{
+    font-size:11.5px; background:none; border:none; color:#F2C265; cursor:pointer;
+    font-family:inherit; text-decoration:underline; margin-top:10px; padding:0;
+  }
+  .share-panel{
+    display:none; background:rgba(255,255,255,0.08); border-radius:10px; padding:14px;
+    margin-top:10px; font-size:12px;
+  }
+  .share-panel.show{ display:block; }
+  .share-panel .code-box{
+    background:rgba(255,255,255,0.12); border-radius:8px; padding:8px 10px; margin:8px 0;
+    font-family:monospace; font-size:13px; letter-spacing:1px; word-break:break-all; color:#fff;
+  }
+  .share-panel input{
+    width:100%; font-family:inherit; font-size:12.5px; padding:8px 10px; border-radius:7px;
+    border:none; margin:8px 0 6px; background:var(--white); color:var(--ink);
+  }
+  .share-panel button{
+    font-family:inherit; font-size:11.5px; font-weight:700; padding:7px 12px; border-radius:7px;
+    border:none; background:var(--gold); color:#2A1F06; cursor:pointer; margin-left:6px;
+  }
+  .share-panel .hint{ opacity:.7; margin-top:8px; line-height:1.7; }
+  .sync-status{ font-size:10.5px; opacity:.6; margin-top:6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="mark">اق</div>
+      <div>
+        <h1>دفترچه اقساط</h1>
+        <p>مدیریت وام و اقساط بانکی</p>
+      </div>
+    </div>
+    <div class="today-pill">امروز: <b id="todayJalali">—</b></div>
+  </header>
+
+  <div class="banner" id="banner">
+    <span class="dot"></span>
+    <span id="bannerText"></span>
+  </div>
+
+  <div class="layout">
+    <div class="stub">
+      <h3>خلاصه وضعیت</h3>
+      <div class="stat"><div class="n" id="statLoans">۰</div><div class="l">وام فعال</div></div>
+      <div class="stat"><div class="n" id="statRemaining">۰ تومان</div><div class="l">مانده کل</div></div>
+      <div class="stat"><div class="n" id="statPaid">۰ تومان</div><div class="l">پرداخت‌شده</div></div>
+      <div class="stat next"><div class="n" id="statNext">—</div><div class="l" id="statNextLabel">قسط بعدی</div></div>
+      <button class="notif-btn" id="notifBtn" style="color:#F2C265; opacity:.9;">فعال‌سازی یادآوری مرورگر</button>
+      <br>
+      <button class="share-toggle" id="shareToggle">🔗 اشتراک با دوستم</button>
+      <div class="share-panel" id="sharePanel">
+        <div>کد این وام‌دفتر:</div>
+        <div class="code-box" id="codeDisplay">در حال ساخت...</div>
+        <button id="copyCodeBtn">کپی کد</button>
+        <div class="hint">این کد رو برای دوستت بفرست تا وارد کنه پایین.</div>
+        <input type="text" id="joinCode" placeholder="کد دوستت رو اینجا بچسبون">
+        <button id="joinBtn">پیوستن به این کد</button>
+        <div class="sync-status" id="syncStatus"></div>
+      </div>
+    </div>
+
+    <div class="main">
+      <button class="form-toggle" id="formToggle">+ افزودن وام جدید</button>
+
+      <div class="form" id="loanForm">
+        <div class="form-grid">
+          <div class="field">
+            <label>نام بانک</label>
+            <input type="text" id="bankName" placeholder="مثلاً بانک ملت">
+          </div>
+          <div class="field">
+            <label>مبلغ کل وام (تومان)</label>
+            <input type="number" id="totalAmount" placeholder="۵۰۰۰۰۰۰۰">
+          </div>
+          <div class="field">
+            <label>تعداد اقساط</label>
+            <input type="number" id="installCount" placeholder="۱۲">
+          </div>
+          <div class="field">
+            <label>مبلغ هر قسط (اختیاری)</label>
+            <input type="number" id="installAmount" placeholder="خودکار محاسبه می‌شود">
+          </div>
+        </div>
+        <div class="field" style="margin-bottom:12px;">
+          <label>تاریخ اولین قسط (شمسی)</label>
+          <div class="date-row">
+            <select id="startYear"></select>
+            <select id="startMonth"></select>
+            <select id="startDay"></select>
+          </div>
+        </div>
+        <div style="display:flex; gap:10px; justify-content:flex-end;">
+          <button class="btn btn-ghost" id="cancelForm">انصراف</button>
+          <button class="btn btn-primary" id="saveLoan">ثبت وام</button>
+        </div>
+      </div>
+
+      <div id="loansList"></div>
+    </div>
+  </div>
+
+  <p class="foot-note">
+    یادآوری‌ها به‌صورت اعلان مرورگر و بنر داخل صفحه نمایش داده می‌شوند.<br>
+    ارسال پیامک واقعی نیازمند اتصال به یک سرویس پیامکی (مانند کاوه‌نگار) و سرور پشتیبان است و در این نسخه فعال نیست.
+  </p>
+</div>
+
+<script>
+/* ---------- Jalali <-> Gregorian conversion (jalaali algorithm) ---------- */
+function div(a,b){ return ~~(a/b); }
+function mod(a,b){ return a - ~~(a/b)*b; }
+function jalCal(jy){
+  var breaks=[-61,9,38,199,426,686,756,818,1111,1181,1210,1635,2060,2097,2192,2262,2324,2394,2456,3178];
+  var bl=breaks.length, gy=jy+621, leapJ=-14, jp=breaks[0], jm,jump,leap,leapG,march,n,i;
+  for(i=1;i<bl;i+=1){ jm=breaks[i]; jump=jm-jp; if(jy<jm) break; leapJ=leapJ+div(jump,33)*8+div(mod(jump,33),4); jp=jm; }
+  n=jy-jp;
+  leapJ=leapJ+div(n,33)*8+div(mod(n,33)+3,4);
+  if(mod(jump,33)===4 && jump-n===4) leapJ+=1;
+  leapG=div(gy,4)-div((div(gy,100)+1)*3,4)-150;
+  march=20+leapJ-leapG;
+  if(jump-n<6) n=n-jump+div(jump+4,33)*33;
+  leap=mod(mod(n+1,33)-1,4);
+  if(leap===-1) leap=4;
+  return {leap:leap, gy:gy, march:march};
+}
+function g2d(gy,gm,gd){
+  var d=div((gy+div(gm-8,6)+100100)*1461,4)+div(153*mod(gm+9,12)+2,5)+gd-34840408;
+  d=d-div(div(gy+100100+div(gm-8,6),100)*3,4)+752;
+  return d;
+}
+function d2g(jdn){
+  var j,i,gd,gm,gy;
+  j=4*jdn+139361631;
+  j=j+div(div(4*jdn+183187720,146097)*3,4)*4-3908;
+  i=div(mod(j,1461),4)*5+308;
+  gd=div(mod(i,153),5)+1;
+  gm=mod(div(i,153),12)+1;
+  gy=div(j,1461)-100100+div(8-gm,6);
+  return {gy:gy,gm:gm,gd:gd};
+}
+function jalaaliToJulian(jy,jm,jd){
+  var r=jalCal(jy);
+  return g2d(r.gy,3,r.march)+(jm-1)*31-div(jm,7)*(jm-7)+jd-1;
+}
+function d2j(jdn){
+  var gy=d2g(jdn).gy, jy=gy-621, r=jalCal(jy), jdn1f=g2d(gy,3,r.march), jd,jm,k;
+  k=jdn-jdn1f;
+  if(k>=0){
+    if(k<=185){ jm=1+div(k,31); jd=mod(k,31)+1; return {jy:jy,jm:jm,jd:jd}; }
+    else { k-=186; }
+  } else { jy-=1; k+=179; if(r.leap===1) k+=1; }
+  jm=7+div(k,30); jd=mod(k,30)+1;
+  return {jy:jy,jm:jm,jd:jd};
+}
+function toJalaali(gy,gm,gd){ return d2j(g2d(gy,gm,gd)); }
+function toGregorian(jy,jm,jd){ return d2g(jalaaliToJulian(jy,jm,jd)); }
+
+var monthNames=["فروردین","اردیبهشت","خرداد","تیر","مرداد","شهریور","مهر","آبان","آذر","دی","بهمن","اسفند"];
+
+function toPersianDigits(str){
+  var fa=['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+  return String(str).replace(/[0-9]/g, function(d){ return fa[d]; });
+}
+function formatMoney(n){
+  n = Math.round(Number(n)||0);
+  return toPersianDigits(n.toLocaleString('en-US')) + ' تومان';
+}
+function jalaaliDaysInMonth(jy,jm){
+  if(jm<=6) return 31;
+  if(jm<=11) return 30;
+  return jalCal(jy).leap===1 ? 30 : 29;
+}
+function formatJalali(j){
+  return toPersianDigits(j.jd) + ' ' + monthNames[j.jm-1] + ' ' + toPersianDigits(j.jy);
+}
+/* add n months to a jalali date, clamping day to month length */
+function addMonthsJalali(j, n){
+  var totalMonth = (j.jm - 1) + n;
+  var jy = j.jy + Math.floor(totalMonth/12);
+  var jm = (totalMonth % 12 + 12) % 12 + 1;
+  var jd = Math.min(j.jd, jalaaliDaysInMonth(jy, jm));
+  return {jy:jy, jm:jm, jd:jd};
+}
+function jalaaliToDayNumber(j){ return jalaaliToJulian(j.jy, j.jm, j.jd); }
+
+/* ---------- Today ---------- */
+var now = new Date();
+var todayJ = toJalaali(now.getFullYear(), now.getMonth()+1, now.getDate());
+var todayDayNum = jalaaliToDayNumber(todayJ);
+document.getElementById('todayJalali').textContent = formatJalali(todayJ);
+
+/* ---------- Populate start-date selects ---------- */
+var selY=document.getElementById('startYear'), selM=document.getElementById('startMonth'), selD=document.getElementById('startDay');
+for(var y=todayJ.jy-1; y<=todayJ.jy+2; y++){
+  var o=document.createElement('option'); o.value=y; o.textContent=toPersianDigits(y);
+  if(y===todayJ.jy) o.selected=true;
+  selY.appendChild(o);
+}
+monthNames.forEach(function(m,idx){
+  var o=document.createElement('option'); o.value=idx+1; o.textContent=m;
+  if(idx+1===todayJ.jm) o.selected=true;
+  selM.appendChild(o);
+});
+function fillDays(){
+  var jy=parseInt(selY.value), jm=parseInt(selM.value);
+  var days=jalaaliDaysInMonth(jy,jm);
+  var cur = selD.value;
+  selD.innerHTML='';
+  for(var d=1; d<=days; d++){
+    var o=document.createElement('option'); o.value=d; o.textContent=toPersianDigits(d);
+    selD.appendChild(o);
+  }
+  if(cur && cur<=days) selD.value=cur; else selD.value=todayJ.jd<=days?todayJ.jd:1;
+}
+selY.addEventListener('change', fillDays);
+selM.addEventListener('change', fillDays);
+fillDays();
+
+/* ---------- Storage (local cache + shared online sync) ---------- */
+var STORAGE_KEY='loans-data';
+var loans=[];
+
+function loadLoans(){
+  try{
+    var raw = localStorage.getItem(STORAGE_KEY);
+    loans = raw ? JSON.parse(raw) : [];
+  }catch(e){ loans=[]; }
+  render();
+}
+function saveLoans(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(loans)); }catch(e){ console.error('storage error', e); }
+  syncPush();
+}
+
+/* ---------- Shared sync via kvdb.io (no login, code-based room) ---------- */
+var KVDB_BASE = 'https://kvdb.io/';
+var bucket = localStorage.getItem('kvdb-bucket');
+var syncStatusEl, codeDisplayEl;
+
+function setSyncStatus(text){ if(syncStatusEl) syncStatusEl.textContent = text; }
+
+function ensureBucket(){
+  if(bucket){ if(codeDisplayEl) codeDisplayEl.textContent = bucket; return Promise.resolve(bucket); }
+  setSyncStatus('در حال ساخت وام‌دفتر مشترک...');
+  return fetch(KVDB_BASE, {
+    method:'POST',
+    headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body:'email=aghsat-app@example.com'
+  }).then(function(res){ return res.text(); })
+    .then(function(id){
+      id = id.trim();
+      if(id && id.length>5){
+        bucket = id;
+        localStorage.setItem('kvdb-bucket', id);
+        if(codeDisplayEl) codeDisplayEl.textContent = id;
+        setSyncStatus('آماده است ✓');
+      }
+      return bucket;
+    }).catch(function(){ setSyncStatus('اتصال برقرار نشد — آفلاین کار می‌کند'); });
+}
+
+function syncPull(){
+  if(!bucket) return;
+  setSyncStatus('در حال هم‌گام‌سازی...');
+  fetch(KVDB_BASE+bucket+'/loans')
+    .then(function(res){ return res.ok ? res.text() : null; })
+    .then(function(text){
+      if(text){
+        loans = JSON.parse(text);
+        localStorage.setItem(STORAGE_KEY, text);
+        render();
+      }
+      setSyncStatus('هم‌گام شد ✓');
+    })
+    .catch(function(){ setSyncStatus('آفلاین — از نسخه ذخیره‌شده استفاده می‌شود'); });
+}
+
+function syncPush(){
+  if(!bucket) return;
+  fetch(KVDB_BASE+bucket+'/loans', { method:'PUT', body: JSON.stringify(loans) })
+    .then(function(){ setSyncStatus('ذخیره شد ✓'); })
+    .catch(function(){ setSyncStatus('ذخیره آفلاین — بعداً هم‌گام می‌شود'); });
+}
+
+/* ---------- Form toggle ---------- */
+var formToggle=document.getElementById('formToggle');
+var loanForm=document.getElementById('loanForm');
+formToggle.addEventListener('click', function(){ loanForm.classList.add('show'); formToggle.style.display='none'; });
+document.getElementById('cancelForm').addEventListener('click', function(){ loanForm.classList.remove('show'); formToggle.style.display='block'; });
+
+/* ---------- Save loan ---------- */
+document.getElementById("saveLoan").addEventListener("click", function(){
+  var bank=document.getElementById('bankName').value.trim();
+  var total=parseFloat(document.getElementById('totalAmount').value);
+  var count=parseInt(document.getElementById('installCount').value);
+  var perInput=parseFloat(document.getElementById('installAmount').value);
+
+  if(!bank){ alert('نام بانک را وارد کنید.'); return; }
+  if(!count || count<1){ alert('تعداد اقساط را درست وارد کنید.'); return; }
+  if(!total && !perInput){ alert('مبلغ کل وام یا مبلغ هر قسط را وارد کنید.'); return; }
+
+  var per = perInput || (total/count);
+  var totalFinal = total || (per*count);
+
+  var startJ = { jy: parseInt(selY.value), jm: parseInt(selM.value), jd: parseInt(selD.value) };
+
+  var installments=[];
+  for(var i=0;i<count;i++){
+    var due = addMonthsJalali(startJ, i);
+    installments.push({ index:i+1, jy:due.jy, jm:due.jm, jd:due.jd, amount:per, paid:false, paidDate:null });
+  }
+
+  loans.push({
+    id: Date.now().toString(36),
+    bank: bank,
+    total: totalFinal,
+    count: count,
+    per: per,
+    installments: installments
+  });
+
+  saveLoans();
+  document.getElementById('bankName').value='';
+  document.getElementById('totalAmount').value='';
+  document.getElementById('installCount').value='';
+  document.getElementById('installAmount').value='';
+  loanForm.classList.remove('show');
+  formToggle.style.display='block';
+  render();
+});
+
+/* ---------- Delete loan ---------- */
+function deleteLoan(id){
+  if(!confirm('این وام حذف شود؟')) return;
+  loans = loans.filter(function(l){ return l.id!==id; });
+  saveLoans();
+  render();
+}
+
+/* ---------- Toggle paid ---------- */
+function togglePaid(loanId, idx){
+  var loan = loans.find(function(l){ return l.id===loanId; });
+  var inst = loan.installments[idx];
+  inst.paid = !inst.paid;
+  inst.paidDate = inst.paid ? formatJalali(todayJ) : null;
+  saveLoans();
+  render();
+}
+
+/* ---------- Status helpers ---------- */
+function getStatus(inst){
+  if(inst.paid) return 'paid';
+  var dueNum = jalaaliToDayNumber({jy:inst.jy, jm:inst.jm, jd:inst.jd});
+  var diff = dueNum - todayDayNum;
+  if(diff<0) return 'overdue';
+  if(diff<=5) return 'soon';
+  return 'ok';
+}
+
+/* ---------- Render ---------- */
+function render(){
+  var list=document.getElementById('loansList');
+  list.innerHTML='';
+
+  var totalRemaining=0, totalPaid=0, activeLoans=0;
+  var upcoming=null;
+
+  if(loans.length===0){
+    list.innerHTML='<div class="empty"><div class="big">🏦</div><p>هنوز وامی ثبت نشده. با دکمهٔ «افزودن وام جدید» شروع کنید.</p></div>';
+  }
+
+  loans.forEach(function(loan){
+    var paidCount = loan.installments.filter(function(i){return i.paid;}).length;
+    var remaining = loan.installments.filter(function(i){return !i.paid;}).reduce(function(s,i){return s+i.amount;},0);
+    var paidSum = loan.installments.filter(function(i){return i.paid;}).reduce(function(s,i){return s+i.amount;},0);
+    totalRemaining += remaining;
+    totalPaid += paidSum;
+    if(paidCount<loan.count) activeLoans++;
+
+    loan.installments.forEach(function(inst){
+      if(!inst.paid){
+        var dueNum = jalaaliToDayNumber({jy:inst.jy,jm:inst.jm,jd:inst.jd});
+        if(!upcoming || dueNum < upcoming.dueNum){
+          upcoming = {dueNum:dueNum, jy:inst.jy, jm:inst.jm, jd:inst.jd, bank:loan.bank, amount:inst.amount};
+        }
+      }
+    });
+
+    var pct = Math.round((paidCount/loan.count)*100);
+
+    var div=document.createElement('div');
+    div.className='loan';
+    var head=document.createElement('div');
+    head.className='loan-head';
+    head.innerHTML =
+      '<div><div class="bank">'+loan.bank+'</div>'+
+      '<div class="meta">'+toPersianDigits(loan.count)+' قسط &middot; هر قسط '+formatMoney(loan.per)+'</div></div>'+
+      '<div class="loan-head-right">'+
+        '<div class="progress-wrap"><span>'+toPersianDigits(paidCount)+'/'+toPersianDigits(loan.count)+'</span>'+
+          '<div class="progress-bar"><span style="width:'+pct+'%"></span></div></div>'+
+        '<button class="del-btn" data-id="'+loan.id+'">حذف</button>'+
+      '</div>';
+    div.appendChild(head);
+
+    var table=document.createElement('table');
+    var thead=document.createElement('thead');
+    thead.innerHTML='<tr><th>#</th><th>سررسید</th><th>مبلغ</th><th>وضعیت</th><th></th></tr>';
+    table.appendChild(thead);
+    var tbody=document.createElement('tbody');
+
+    loan.installments.forEach(function(inst, idx){
+      var status=getStatus(inst);
+      var tr=document.createElement('tr');
+      if(status==='overdue') tr.className='row-overdue';
+      if(status==='soon') tr.className='row-due-soon';
+
+      var badge='';
+      if(inst.paid) badge='<span class="stamp">پرداخت شد</span>';
+      else if(status==='overdue') badge='<span class="badge badge-overdue">سررسید گذشته</span>';
+      else if(status==='soon') badge='<span class="badge badge-soon">نزدیک سررسید</span>';
+      else badge='<span class="badge badge-ok">در جریان</span>';
+
+      var jdate={jy:inst.jy, jm:inst.jm, jd:inst.jd};
+      tr.innerHTML =
+        '<td>'+toPersianDigits(inst.index)+'</td>'+
+        '<td>'+formatJalali(jdate)+'</td>'+
+        '<td class="amt">'+formatMoney(inst.amount)+'</td>'+
+        '<td>'+badge+'</td>'+
+        '<td><button class="pay-btn" data-loan="'+loan.id+'" data-idx="'+idx+'">'+(inst.paid?'لغو پرداخت':'ثبت پرداخت')+'</button></td>';
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    div.appendChild(table);
+    list.appendChild(div);
+  });
+
+  document.getElementById('statLoans').textContent = toPersianDigits(activeLoans);
+  document.getElementById('statRemaining').textContent = formatMoney(totalRemaining);
+  document.getElementById('statPaid').textContent = formatMoney(totalPaid);
+
+  if(upcoming){
+    var diff = upcoming.dueNum - todayDayNum;
+    document.getElementById('statNext').textContent = formatJalali({jy:upcoming.jy,jm:upcoming.jm,jd:upcoming.jd});
+    document.getElementById('statNextLabel').textContent = 'قسط بعدی — '+upcoming.bank;
+
+    var banner=document.getElementById('banner');
+    var bannerText=document.getElementById('bannerText');
+    if(diff<0){
+      bannerText.textContent = 'قسط '+upcoming.bank+' به مبلغ '+formatMoney(upcoming.amount)+' سررسید گذشته است!';
+      banner.classList.add('show');
+    } else if(diff<=5){
+      bannerText.textContent = 'قسط '+upcoming.bank+' به مبلغ '+formatMoney(upcoming.amount)+' تا '+toPersianDigits(diff)+' روز دیگر سررسید می‌شود.';
+      banner.classList.add('show');
+    } else {
+      banner.classList.remove('show');
+    }
+  } else {
+    document.getElementById('statNext').textContent='—';
+    document.getElementById('statNextLabel').textContent='قسط بعدی';
+    document.getElementById('banner').classList.remove('show');
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('.del-btn'), function(btn){
+    btn.addEventListener('click', function(){ deleteLoan(btn.getAttribute('data-id')); });
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.pay-btn'), function(btn){
+    btn.addEventListener('click', function(){ togglePaid(btn.getAttribute('data-loan'), parseInt(btn.getAttribute('data-idx'))); });
+  });
+}
+
+/* ---------- Browser notification reminders ---------- */
+document.getElementById('notifBtn').addEventListener('click', function(){
+  if(!('Notification' in window)){ alert('مرورگر شما از اعلان پشتیبانی نمی‌کند.'); return; }
+  Notification.requestPermission().then(function(perm){
+    if(perm==='granted'){
+      document.getElementById('notifBtn').textContent='یادآوری مرورگر فعال است ✓';
+      checkReminders();
+    }
+  });
+});
+function checkReminders(){
+  if(!('Notification' in window) || Notification.permission!=='granted') return;
+  loans.forEach(function(loan){
+    loan.installments.forEach(function(inst){
+      if(inst.paid) return;
+      var status = getStatus(inst);
+      if(status==='soon' || status==='overdue'){
+        new Notification('یادآوری قسط '+loan.bank, {
+          body: formatMoney(inst.amount)+' — سررسید: '+formatJalali({jy:inst.jy,jm:inst.jm,jd:inst.jd}),
+        });
+      }
+    });
+  });
+}
+
+/* ---------- Share panel wiring ---------- */
+syncStatusEl = document.getElementById('syncStatus');
+codeDisplayEl = document.getElementById('codeDisplay');
+
+document.getElementById('shareToggle').addEventListener('click', function(){
+  document.getElementById('sharePanel').classList.toggle('show');
+});
+document.getElementById('copyCodeBtn').addEventListener('click', function(){
+  var code = codeDisplayEl.textContent;
+  if(navigator.clipboard && code){
+    navigator.clipboard.writeText(code).then(function(){
+      var btn = document.getElementById('copyCodeBtn');
+      var old = btn.textContent; btn.textContent='کپی شد ✓';
+      setTimeout(function(){ btn.textContent = old; }, 1500);
+    });
+  }
+});
+document.getElementById('joinBtn').addEventListener('click', function(){
+  var code = document.getElementById('joinCode').value.trim();
+  if(!code) return;
+  bucket = code;
+  localStorage.setItem('kvdb-bucket', code);
+  codeDisplayEl.textContent = code;
+  syncPull();
+});
+
+/* ---------- Init ---------- */
+loadLoans();
+ensureBucket().then(function(){ syncPull(); });
+setInterval(function(){ if(bucket) syncPull(); }, 20000);
+window.addEventListener('focus', function(){ if(bucket) syncPull(); });
+</script>
+</body>
+</html>
